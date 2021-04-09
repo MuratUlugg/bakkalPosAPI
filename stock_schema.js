@@ -1,15 +1,24 @@
 var mongoose = require("mongoose");
 
 var stockSchema = new mongoose.Schema({
-    name: String,
-    stock_id: Number,
-    unit: String,
-    unit2: String,
-    unit2S: Number,
-    price: Number,
-    balance: Number,
-    taxRate: Number,
-    groupCode: Number
+    stockCode: string,
+    stockName: string,
+    unit: string,
+    quantityAvailable: number,
+    cost: number,
+    status: string,
+    quantityOnOrder: number,
+    currencyCode: string ,
+    dscoItemId: number,
+    supplierName: string,
+    supplierId: string,
+    createDate: Date ,
+    lastQuantityUpdateDate: Date ,
+    lastCostUpdateDate: Date ,
+    lastUpdateDate: Date,
+    categoryId: number,
+    picture: string,
+
 });
 
 module.exports = stockSchema;

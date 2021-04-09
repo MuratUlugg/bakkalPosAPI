@@ -31,7 +31,12 @@ const { json } = require("body-parser");
 // EndPoints
 app.get('/stock', function (req, res) {
     mongoClient.find(function (err, doc) {
-        res.send(doc);
+        const page = req.query.page;
+        const limit = req.query.limit;
+        const startIndex = (page -1) * limit;
+        const EndIndex = page * limit;
+        const result = doc.slice(startIndex,EndIndex)
+        res.send(result);
     })
 })
 
@@ -45,7 +50,7 @@ app.get("/stock/:stockId", function (req, res) {
         redisClient.get(stockKey, function (err, stocks) {
             //Stok yok ise 
             if (stocks == null) {
-                var query = { "stock_id": stockId };
+                var query = { "sku": stockId };
                 //Mongodb üzerinden çekilir ve redise kaydedilir.
                 mongoClient.findOne(query, function (err, doc) {
                     var data = JSON.stringify(doc);
