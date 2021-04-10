@@ -8,7 +8,13 @@ var mongoose = require("mongoose");
 const redisClient = require('./redisClient');
 
 //Mongo
-const mongoClient = require('./mongo');
+var stockShema = require('./stock_schema');
+var categorySchema = require("./category_schema");
+
+mongoose.connect('mongodb://127.0.0.1:27017/stock', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.set('useFindAndModify', false);
+
+var mongoClient = mongoose.model('stock', stockShema, 'stock');
 
 // Stock Schema 
 var stockSchema = require('./stock_schema');
@@ -30,17 +36,101 @@ const { json } = require("body-parser");
 
 // EndPoints
 app.get('/stock', function (req, res) {
-    mongoClient.find(function (err, doc) {
-        const page = req.query.page;
-        const limit = req.query.limit;
-        const startIndex = (page -1) * limit;
-        const EndIndex = page * limit;
-        const result = doc.slice(startIndex,EndIndex)
-        res.send(result);
-    })
+    mongoClient = mongoose.model('stock', stockShema, 'stock');
+ //Redis Bağlandı Kontrolü Yapılır 
+ if (redisClient.connected) {
+    var key = 'stock'
+    //Redisten stok kartı çekilir . 
+    redisClient.get(key, function (err, stocks) {
+        //Stok yok ise 
+        if (stocks == null || stocks == '[]') {
+            mongoClient.find(function (err, doc) {
+                var data = JSON.stringify(doc);
+                redisClient.set(key, data, function (err, res) { });
+                redisClient.expire(key, 300); // expire süresi 5 dk
+                res.send(doc);
+            })
+        }
+        else {
+            var doc = JSON.parse(stocks)
+            res.send(stocks);
+        }
+    });
+
+ }
+ else {
+        mongoClient.find(function (err, doc) {
+            res.send(doc);
+        });
+    } 
+})
+
+app.get('/category', function (req, res) {
+    mongoClient = mongoose.model('category', categorySchema, 'category');
+      //Redis Bağlandı Kontrolü Yapılır 
+      if (redisClient.connected) {
+        var key = 'categoryMain'
+        //Redisten stok kartı çekilir . 
+        redisClient.get(key, function (err, stocks) {
+            //Stok yok ise 
+            if (stocks == null || stocks == '[]') {
+                mongoClient.find(function (err, doc) {
+                    var data = JSON.stringify(doc);
+                    redisClient.set(key, data, function (err, res) { });
+                    redisClient.expire(key, 300); // expire süresi 5 dk
+                    res.send(doc);
+                })
+            }
+            else {
+                var doc = JSON.parse(stocks)
+                res.send(stocks);
+            }
+        });
+
+     }
+     else {
+            mongoClient.find(function (err, doc) {
+                res.send(doc);
+            });
+        } 
+})
+
+app.get("/stock/stockbycategory/:categoryid", function (req, res) {
+    mongoClient = mongoose.model('stock', stockShema, 'stock');
+    //categoryid Alınır 
+    var id = req.params.categoryid;
+    //Redis Bağlandı Kontrolü Yapılır 
+    if (redisClient.connected) {
+        var key = 'category:' + id;
+        //Redisten stok kartı çekilir . 
+        redisClient.get(key, function (err, stocks) {
+            //Stok yok ise 
+            if (stocks == null || stocks == '[]') {
+                var query = { "category": id.toString() };
+                //Mongodb üzerinden çekilir ve redise kaydedilir.
+                mongoClient.find(query, function (err, doc) {
+                    var data = JSON.stringify(doc);
+                    redisClient.set(key, data, function (err, res) { });
+                    redisClient.expire(key, 300); // expire süresi 5 dk
+                    res.send(doc);
+                })
+            } else {
+                var doc = JSON.parse(stocks)
+                res.send(stocks);
+            }
+        });
+    }
+    else {
+        var query = { "category": req.params.categoryid };
+        mongoClient = mongoose.model('stock', stockShema, 'stock');
+        mongoClient.find(query, function (err, doc) {
+            res.send(doc);
+        });
+    }
 })
 
 app.get("/stock/:stockId", function (req, res) {
+    mongoClient = mongoose.model('stock', stockShema, 'stock');
     //stockId Alınır 
     var stockId = req.params.stockId;
     //Redis Bağlandı Kontrolü Yapılır 
@@ -50,7 +140,7 @@ app.get("/stock/:stockId", function (req, res) {
         redisClient.get(stockKey, function (err, stocks) {
             //Stok yok ise 
             if (stocks == null) {
-                var query = { "sku": stockId };
+                var query = { "stockCode": stockId.toString() };
                 //Mongodb üzerinden çekilir ve redise kaydedilir.
                 mongoClient.findOne(query, function (err, doc) {
                     var data = JSON.stringify(doc);
@@ -65,7 +155,8 @@ app.get("/stock/:stockId", function (req, res) {
         });
     }
     else {
-        var query = { "stock_id": req.params.stockId };
+        var query = { "stockCode": req.params.stockId };
+        mongoClient = mongoose.model('stock', stockShema, 'stock');
         mongoClient.find(query, function (err, doc) {
             res.send(doc);
         });
