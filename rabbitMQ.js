@@ -1,8 +1,8 @@
 var amqp = require('amqplib/callback_api');
-const rabbitUrl = 'amqp://192.168.1.5';
-const opt = { creadentials: require('amqplib').credentials.plain('murat', '123') }
+const rabbitUrl = 'amqp://192.168.1.6';
+const opt = { creadentials: require('amqplib').credentials.plain('guest', 'guest') }
 
-function sendRabbitMq(queueName, data) {
+function sendRabbitMQ(queueName, data) {
     amqp.connect(rabbitUrl, opt, function (error0, connection) {
         if (error0) {
             throw error0;
@@ -11,16 +11,20 @@ function sendRabbitMq(queueName, data) {
             if (error1) {
                 throw error1;
             }
+
             var queue = queueName;
 
             channel.assertQueue(queue, {
                 durable: false
             });
-            channel.sendToQueue(queue, Buffer.from(data));   // Data burda rabbitMQ ya gönderilir .
-            console.log("[x] Send %s ", data);
+            channel.sendToQueue(queue, Buffer.from(data));
+
+            console.log(" [x] Sent %s", data);
         });
         setTimeout(function () {
             connection.close();
         }, 500);
     });
 }
+
+module.exports = sendRabbitMQ;

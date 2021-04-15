@@ -165,12 +165,16 @@ app.get("/stock/:stockId", function (req, res) {
 
 app.post('/updateStock', async (req, res) => {
     try {
-        var Stocks = mongoose.model('stock', stockSchema, 'stocks');
-        var updateStocks = new Stocks(req.body);
-        const stocks = await Stocks.findOne({ stockId: updateStocks.stockId });
-        await stocks.updateOne(updateStocks);
+        mongoClient = mongoose.model('stock', stockShema, 'stock');
+        var updateStocks = new mongoClient(req.body);
+
+        var query = { "stockCode": req.body.stockCode.toString() };
+        //Mongodb üzerinden çekilir ve redise kaydedilir.
+        const stockss = mongoClient.findOne(query, function (err, doc) {})
+        await stockss.updateOne(updateStocks)
+
         //Send RabbitMq
-        sendRabbitMq('newsChannel', JSON.stringify(updateStocks));
+        sendRabbitMq('stockChannel', JSON.stringify(updateStocks));
         return res.status(200).json({ status: 'succesfully update' });
     } catch (error) {
         res.status(500).send(error);
