@@ -37,62 +37,16 @@ const { json } = require("body-parser");
 // EndPoints
 app.get('/stock', function (req, res) {
     mongoClient = mongoose.model('stock', stockShema, 'stock');
- //Redis Bağlandı Kontrolü Yapılır 
- if (redisClient.connected) {
-    var key = 'stock'
-    //Redisten stok kartı çekilir . 
-    redisClient.get(key, function (err, stocks) {
-        //Stok yok ise 
-        if (stocks == null || stocks == '[]') {
-            mongoClient.find(function (err, doc) {
-                var data = JSON.stringify(doc);
-                redisClient.set(key, data, function (err, res) { });
-                redisClient.expire(key, 300); // expire süresi 5 dk
-                res.send(doc);
-            })
-        }
-        else {
-            var doc = JSON.parse(stocks)
-            res.send(stocks);
-        }
-    });
-
- }
- else {
         mongoClient.find(function (err, doc) {
             res.send(doc);
         });
-    } 
 })
 
 app.get('/category', function (req, res) {
     mongoClient = mongoose.model('category', categorySchema, 'category');
-      //Redis Bağlandı Kontrolü Yapılır 
-      if (redisClient.connected) {
-        var key = 'categoryMain'
-        //Redisten stok kartı çekilir . 
-        redisClient.get(key, function (err, stocks) {
-            //Stok yok ise 
-            if (stocks == null || stocks == '[]') {
-                mongoClient.find(function (err, doc) {
-                    var data = JSON.stringify(doc);
-                    redisClient.set(key, data, function (err, res) { });
-                    redisClient.expire(key, 300); // expire süresi 5 dk
-                    res.send(doc);
-                })
-            }
-            else {
-                var doc = JSON.parse(stocks)
-                res.send(stocks);
-            }
-        });
-
-     }
-     else {
             mongoClient.find(function (err, doc) {
                 res.send(doc);
             });
-        } 
 })
 
 app.get("/stock/stockbycategory/:categoryid", function (req, res) {
